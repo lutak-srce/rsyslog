@@ -1,0 +1,3 @@
+<% if @protocol == 'tcp' then curproto = '@@' else curproto = '@' end -%>
+# remote host is: name/ip:port, e.g. 192.168.0.1:514, port optional
+<%= @forward %> <%= curproto %><%= @server %>:<%= @port %>

@@ -1,0 +1,81 @@
+# rsyslog v5 configuration file
+
+# For more information see /usr/share/doc/rsyslog-*/rsyslog_conf.html
+# If you experience problems, see http://www.rsyslog.com/doc/troubleshoot.html
+
+# Drop privileges
+$PrivDropToUser <%= @user %>
+$PrivDropToGroup <%= @group %>
+
+# Set the default permissions for all log files.
+#
+$FileOwner <%= @user %>
+$FileGroup <%= @group %>
+$FileCreateMode <%= @file_create_mode %>
+$DirCreateMode <%= @dir_create_mode %>
+$Umask <%= @umask %>
+
+#### MODULES ####
+
+$ModLoad imuxsock # provides support for local system logging (e.g. via logger command)
+#$ModLoad imklog  # provides kernel logging support (previously done by rklogd)
+#$ModLoad immark  # provides --MARK-- message capability
+
+<% if @udp_port.to_i != 0 -%>
+# Provides UDP syslog reception
+$ModLoad imudp
+$UDPServerRun <%= @udp_port.to_i %>
+<% end -%>
+
+<% if @tcp_port.to_i != 0 -%>
+# Provides TCP syslog reception
+$ModLoad imtcp
+$InputTCPServerRun <%= @tcp_port.to_i %>
+<% end -%>
+
+#### GLOBAL DIRECTIVES ####
+
+# Use default timestamp format
+$ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+
+# File syncing capability is disabled by default. This feature is usually not required,
+# not useful and an extreme performance hit
+#$ActionFileEnableSync on
+
+# Filter duplicated messages
+$RepeatedMsgReduction on
+
+# log destinations
+$template RemoteMessages, "/data/syslog/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/messages"
+$template RemoteSecure,   "/data/syslog/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/secure"
+$template RemoteMaillog,  "/data/syslog/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/maillog"
+$template RemoteCron,     "/data/syslog/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/cron"
+$template RemoteSpooler,  "/data/syslog/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/spooler"
+$template RemoteDaemon,   "/data/syslog/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/spooler"
+
+# log rules
+
+# Log anything (except mail) of level info or higher.
+# Don't log private authentication messages!
+if  (   $syslogfacility-text != 'auth'     \
+    and $syslogfacility-text != 'authpriv' \
+    and $syslogfacility-text != 'news'     \
+    and $syslogfacility-text != 'mail'     \
+    and $syslogfacility-text != 'cron'     \
+    and $syslogfacility-text != 'daemon' ) \
+  and                                      \
+    (  $syslogseverity-text == 'info'      \
+    or $syslogseverity-text == 'notice'    \
+    or $syslogseverity-text == 'warn'    ) \
+then ?RemoteMessages
+# The authpriv file has restricted access.
+if $syslogfacility-text == 'authpriv' then ?RemoteSecure
+# Log all the mail messages in one place.
+if $syslogfacility-text == 'mail' then ?RemoteMaillog
+# Log cron stuff
+if $syslogfacility-text == 'cron' then ?RemoteCron
+# Save news errors of level crit and higher in a special file.
+if $syslogfacility-text == 'uucp' or ( $syslogfacility-text == 'news' and $syslogseverity-text == 'crit' ) then ?RemoteSpooler
+# Additional: daemon
+if $syslogfacility-text == 'daemon' then ?RemoteDaemon
+# EOF #
