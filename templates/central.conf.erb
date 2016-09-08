@@ -46,12 +46,12 @@ $ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
 $RepeatedMsgReduction on
 
 # log destinations
-$template RemoteMessages, "/data/syslog/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/messages"
-$template RemoteSecure,   "/data/syslog/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/secure"
-$template RemoteMaillog,  "/data/syslog/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/maillog"
-$template RemoteCron,     "/data/syslog/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/cron"
-$template RemoteSpooler,  "/data/syslog/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/spooler"
-$template RemoteDaemon,   "/data/syslog/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/spooler"
+$template RemoteMessages, "<%= @datadir %>/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/messages"
+$template RemoteSecure,   "<%= @datadir %>/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/secure"
+$template RemoteMaillog,  "<%= @datadir %>/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/maillog"
+$template RemoteCron,     "<%= @datadir %>/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/cron"
+$template RemoteSpooler,  "<%= @datadir %>/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/spooler"
+$template RemoteDaemon,   "<%= @datadir %>/%HOSTNAME%/%$YEAR%%$MONTH%%$DAY%/spooler"
 
 # log rules
 
