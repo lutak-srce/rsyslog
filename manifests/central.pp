@@ -51,10 +51,12 @@ class rsyslog::central (
   }
 
   file { $datadir :
-    ensure  => directory,
-    owner   => $user,
-    group   => $group,
-    seltype => 'var_log_t',
+    ensure       => directory,
+    owner        => $user,
+    group        => $group,
+    recurse      => false,
+    recurselimit => 0,
+    seltype      => 'var_log_t',
   }
 
   file { "/etc/init.d/${service}" :
