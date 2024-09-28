@@ -22,9 +22,6 @@ class rsyslog::central (
 ) {
   include ::rsyslog
 
-  ### Input parameters validation
-  validate_re($status,  ['enabled','disabled','running','stopped','activated','deactivated','unmanaged'], 'Valid values are: enabled, disabled, running, stopped, activated, deactivated and unmanaged')
-
   $service_enable = $status ? {
     'enabled'     => true,
     'disabled'    => false,
