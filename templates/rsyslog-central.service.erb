@@ -1,0 +1,35 @@
+[Unit]
+Description=Rsyslog Central Logging Service
+Wants=network.target network-online.target
+After=network.target network-online.target
+Documentation=man:rsyslogd(8)
+Documentation=https://www.rsyslog.com/doc/
+
+[Service]
+Type=notify
+EnvironmentFile=-/etc/sysconfig/rsyslog-central
+ExecStart=/usr/sbin/rsyslogd -n -f <%= @config_file %> $SYSLOGD_OPTIONS -i /var/run/rsyslog-central.pid
+PIDFile=/var/run/rsyslog-central.pid
+UMask=0066
+StandardOutput=syslog
+StandardError=syslog
+Restart=on-failure
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=net
+NoNewPrivileges=yes
+ProtectControlGroups=yes
+ProtectHome=read-only
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+RestrictSUIDSGID=yes
+SystemCallArchitectures=native
+SystemCallFilter=~@clock @debug @module @raw-io @reboot @swap @cpu-emulation @obsolete
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+
+# Increase the default a bit in order to allow many simultaneous
+# files to be monitored, we might need a lot of fds.
+LimitNOFILE=16384
+
+[Install]
+WantedBy=multi-user.target

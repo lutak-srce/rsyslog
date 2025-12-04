@@ -1,110 +1,81 @@
+# @summary
+#   Manifest for Central Rsyslog server
 #
-# = Class: rsyslog::central
-#
-# This class manages separate rsyslog service that drops
-# privileges and acts as central logging system.
 class rsyslog::central (
-  $service          = 'rsyslog-central',
-  $syslogd_options  = '-c 5',
+  $user             = 'rsyslog-central',
+  $group            = 'rsyslog-central',
+  $uid              = '698',
+  $gid              = '698',
   $config_file      = '/etc/rsyslog-central.conf',
-  $config_template  = 'rsyslog/central.conf.erb',
-  $datadir          = '/var/lib/syslog',
-  $user             = 'rsyslog',
-  $group            = 'rsyslog',
-  $uid              = '98',
-  $gid              = '98',
+  $syslogd_options  = '',
   $tcp_port         = '10514',
   $udp_port         = '514',
   $file_create_mode = '0640',
   $dir_create_mode  = '0750',
-  $umask            = '0077',
-  $status           = 'enabled',
+  $umask            = '0027',
+  $datadir          = '/var/lib/rsyslog-central',
 ) {
-  include ::rsyslog
 
-  $service_enable = $status ? {
-    'enabled'     => true,
-    'disabled'    => false,
-    'running'     => undef,
-    'stopped'     => undef,
-    'activated'   => true,
-    'deactivated' => false,
-    'unmanaged'   => undef,
+  group { 'rsyslog-central':
+    ensure => present,
+    name   => $group,
+    gid    => $gid,
+    system => true,
+    notify => Service['rsyslog-central'],
   }
-  $service_ensure = $status ? {
-    'enabled'     => 'running',
-    'disabled'    => 'stopped',
-    'running'     => 'running',
-    'stopped'     => 'stopped',
-    'activated'   => undef,
-    'deactivated' => undef,
-    'unmanaged'   => undef,
+
+  user { 'rsyslog-central':
+    ensure     => present,
+    name       => $user,
+    system     => true,
+    uid        => $uid,
+    gid        => $gid,
+    shell      => '/sbin/nologin',
+    home       => $datadir,
+    managehome => false,
+    comment    => 'System user for central syslog service',
+    notify     => Service['rsyslog-central'],
   }
 
   File {
-    owner => root,
-    group => root,
-    mode  => '0644',
+    ensure  => file,
+    owner   => root,
+    group   => root,
+    mode    => '0644',
+    notify  => Service['rsyslog-central'],
   }
 
-  file { $datadir :
-    ensure       => directory,
-    owner        => $user,
-    group        => $group,
-    recurse      => false,
-    recurselimit => 0,
-    seltype      => 'var_log_t',
+  file { '/var/lib/rsyslog-central':
+    ensure  => directory,
+    owner   => $user,
+    group   => $group,
+    recurse => false,
+    seltype => 'var_log_t',
   }
 
-  file { "/etc/init.d/${service}" :
-    mode   => '0755',
-    source => 'puppet:///modules/rsyslog/central.init'
+  file { '/etc/sysconfig/rsyslog-central':
+    content => template('rsyslog/rsyslog-central.sysconfig.erb'),
   }
 
-  file { "/etc/sysconfig/${service}" :
-    content => template('rsyslog/central.sysconfig.erb'),
-    notify  => Service[$service],
-  }
-
-  file { $config_file :
-    content => template($config_template),
-    notify  => Service[$service],
-  }
-
-  group { $user :
-    ensure => present,
-    gid    => $gid,
-    system => true,
-  }
-
-  user { $group :
-    ensure     => present,
-    comment    => 'Central syslog user',
-    uid        => $uid,
-    gid        => $gid,
-    system     => true,
-    home       => $datadir,
-    managehome => false,
-    shell      => '/sbin/nologin',
+  file { '/etc/rsyslog-central.conf':
+    path    => $config_file,
+    content => template('rsyslog/rsyslog-central.conf.erb'),
   }
 
   file { '/etc/rsyslog-central.d':
-    ensure  => directory,
-    owner   => root,
-    group   => root,
-    mode    => '0755',
-    purge   => $::purge_dotd,
-    require => Package['rsyslog'],
+    ensure => directory,
+    mode   => '0755',
+    purge  => true,
   }
 
-  service { $service :
-    ensure  => $service_ensure,
-    enable  => $service_enable,
-    require => [
-      Group[$group],
-      User[$user],
-      File['/etc/rsyslog-central.d'],
-    ],
+  file { '/etc/systemd/system/rsyslog-central.service':
+    ensure  => file,
+    content => template('rsyslog/rsyslog-central.service.erb'),
+  }
+
+  service { 'rsyslog-central':
+    ensure => running,
+    enable => true,
   }
 
 }
